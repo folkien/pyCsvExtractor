@@ -5,7 +5,7 @@ import argparse
 import datetime as dt
 
 
-def CsvToDataframe(filename):
+def CsvToDataframe(filename, format):
     ''' Reads csv to dataframe'''
     # Open file
     data = pd.read_csv(filename, sep=args.separator, decimal=args.decimalpoint)
@@ -14,7 +14,7 @@ def CsvToDataframe(filename):
     for index in range(len(data[data.columns[0]])):
         text = data[data.columns[0]][index]
         data[data.columns[0]].values[index] = dt.datetime.strptime(
-            text, args.dataformat)
+            text, format)
 
     return data
 
@@ -24,12 +24,12 @@ def GetBeginEndTimestamps(data):
         First column treat as timestamp index.
         Returns begin, end
     '''
-    return data[data.columns[0]][0], data[data.columns[0]][-1]
+    return data[data.columns[0]].iloc[0], data[data.columns[0]].iloc[-1]
 
 
 def SynchronizeDatetime(data, filename):
     ''' Synchronize datatime from file with given pands dataframe '''
-    data2 = CsvToDataframe(filename)
+    data2 = CsvToDataframe(filename, args.dateformat2)
 
     # Get begin end timestamps
     begin1, end1 = GetBeginEndTimestamps(data)
@@ -44,6 +44,7 @@ def SynchronizeDatetime(data, filename):
 
         data = data[data[data.columns[0]] >= begin]
         data = data[data[data.columns[0]] <= end]
+        print('Selected data from range', begin, 'to', end)
 
     return data
 
@@ -57,7 +58,9 @@ parser.add_argument('-d', '--decimalpoint', type=str, nargs='?', const='.',
                     required=False, help='Data CSV separator')
 parser.add_argument('-s', '--separator', type=str, nargs='?', const=';',
                     required=False, help='Data CSV separator')
-parser.add_argument('-df', '--dataformat', type=str, nargs='?', const='%Y-%m-%d %H:%M:%S,%f', default='%Y-%m-%d %H:%M:%S,%f',
+parser.add_argument('-df', '--dateformat', type=str, nargs='?', const='%Y-%m-%d %H:%M:%S,%f', default='%Y-%m-%d %H:%M:%S,%f',
+                    required=False, help='Data time format')
+parser.add_argument('-df2', '--dateformat2', type=str, nargs='?', const='%Y-%m-%d %H:%M:%S,%f', default='%Y-%m-%d %H:%M:%S',
                     required=False, help='Data time format')
 parser.add_argument('-x', '--synchronize-with-file', type=str,
                     required=False, help='Synchronize timestamps with file')
@@ -71,8 +74,9 @@ if (args.separator is not None):
     separator = args.separator
 
 # Open file
-data = CsvToDataframe(args.input)
-
+data = CsvToDataframe(args.input, args.dateformat)
+print('Data columns %u.' % len(data.columns))
+print('Data rows %u.' % len(data))
 
 # Remove miliseconds
 if (args.removems is not None):
