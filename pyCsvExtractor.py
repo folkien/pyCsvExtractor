@@ -8,11 +8,13 @@ import datetime as dt
 def CsvToDataframe(filename):
     ''' Reads csv to dataframe'''
     # Open file
-    data = pd.read_csv(filename, sep=args.separator,
-                       decimal=args.decimalpoint)
-    # Cast to datetime
-    data[data.columns[0]] = pd.to_datetime(
-        data[data.columns[0]], format=args.dataformat)
+    data = pd.read_csv(filename, sep=args.separator, decimal=args.decimalpoint)
+
+    # Change to dt date timestamp
+    for index in range(len(data[data.columns[0]])):
+        text = data[data.columns[0]][index]
+        data[data.columns[0]].values[index] = dt.datetime.strptime(
+            text, args.dataformat)
 
     return data
 
@@ -55,7 +57,7 @@ parser.add_argument('-d', '--decimalpoint', type=str, nargs='?', const='.',
                     required=False, help='Data CSV separator')
 parser.add_argument('-s', '--separator', type=str, nargs='?', const=';',
                     required=False, help='Data CSV separator')
-parser.add_argument('-df', '--dataformat', type=str, nargs='?', const='%Y-%m-%d %H:%M:%S,%f',
+parser.add_argument('-df', '--dataformat', type=str, nargs='?', const='%Y-%m-%d %H:%M:%S,%f', default='%Y-%m-%d %H:%M:%S,%f',
                     required=False, help='Data time format')
 parser.add_argument('-x', '--synchronize-with-file', type=str,
                     required=False, help='Synchronize timestamps with file')
@@ -71,6 +73,13 @@ if (args.separator is not None):
 # Open file
 data = CsvToDataframe(args.input)
 
+
+# Remove miliseconds
+if (args.removems is not None):
+    for index in range(len(data[data.columns[0]])):
+        element = data[data.columns[0]][index]
+        data[data.columns[0]].values[index] = element.replace(microsecond=0)
+
 # Remove all equal to values from column 1
 if (args.removeEqualTo is not None):
     data = data[data[data.columns[1]] != args.removeEqualTo]
@@ -80,7 +89,7 @@ if (args.synchronize_with_file is not None):
     data = SynchronizeDatetime(data, args.synchronize_with_file)
 
 
-print(data.values)
-
 # Create .csv
 print('Creation of .csv.')
+data.to_csv('Changed.'+args.input, index=False,
+            sep=args.separator, decimal=args.decimalpoint)
