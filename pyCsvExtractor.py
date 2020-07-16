@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 import argparse
-import datetime
+import datetime as dt
 
 
 def signalsToCsvs(filename, labels, signals, sampleRates):
@@ -47,6 +47,8 @@ parser.add_argument('-d', '--decimalpoint', type=str, nargs='?', const='.',
                     required=False, help='Data CSV separator')
 parser.add_argument('-s', '--separator', type=str, nargs='?', const=';',
                     required=False, help='Data CSV separator')
+parser.add_argument('-df', '--dataformat', type=str, nargs='?', const='%Y-%m-%d %H:%M:%S,%f',
+                    required=False, help='Data time format')
 parser.add_argument('-x', '--synchronize-with-file', type=str,
                     required=False, help='Synchronize timestamps with file')
 parser.add_argument('-r', '--removeEqualTo', type=float,
@@ -61,22 +63,18 @@ if (args.separator is not None):
     separator = args.separator
 
 # Open file
-
-
-def dateparse(x): return pd.datetime.strptime(x, '%Y-%m-%d %H:%M:%S,%f')
-
-
 data = pd.read_csv(args.input, sep=args.separator,
-                   decimal=args.decimalpoint, parse_dates=True, date_parser=dateparse)
-
+                   decimal=args.decimalpoint)
 # Cast to datetime
+data[data.columns[0]] = pd.to_datetime(
+    data[data.columns[0]], format=args.dataformat)
 
 # Remove all equal to values from column 1
 if (args.removeEqualTo is not None):
     data = data[data[data.columns[1]] != args.removeEqualTo]
 
 
-print(data)
+print(data.values)
 
 # Create .csv
 print('Creation of .csv.')
