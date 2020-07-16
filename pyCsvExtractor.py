@@ -4,24 +4,6 @@ import pandas as pd
 import argparse
 import datetime
 
-# defaults
-separator = ';'
-
-
-def signalsToCsv(filename, labels, signals):
-    ''' Export all signals to single .csv'''
-    filename = filename+'.csv'
-    with open(filename, 'w+') as f:
-        labels_row = separator.join(labels)
-        f.write(labels_row)
-
-        # Get max samples length
-        maxLength = 0
-        for i in range(len(signals)):
-            maxLength = max(maxLength, len(signals[i]))
-
-        # @TODO
-
 
 def signalsToCsvs(filename, labels, signals, sampleRates):
     ''' Export all signals to multiple .csv'''
@@ -61,7 +43,9 @@ def signalsToCsvs(filename, labels, signals, sampleRates):
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', type=str,
                     required=True, help='Input .csv file')
-parser.add_argument('-s', '--separator', type=str,
+parser.add_argument('-d', '--decimalpoint', type=str, nargs='?', const='.',
+                    required=False, help='Data CSV separator')
+parser.add_argument('-s', '--separator', type=str, nargs='?', const=';',
                     required=False, help='Data CSV separator')
 parser.add_argument('-x', '--synchronize-with-file', type=str,
                     required=False, help='Synchronize timestamps with file')
@@ -77,9 +61,14 @@ if (args.separator is not None):
     separator = args.separator
 
 # Open file
-data = pd.read_csv(args.input)
-print(data)
+
+
+def dateparse(x): return pd.datetime.strptime(x, '%Y-%m-%d %H:%M:%S,%f')
+
+
+data = pd.read_csv(args.input, sep=args.separator,
+                   decimal=args.decimalpoint, parse_dates=True, date_parser=dateparse)
+print(data.values)
 
 # Create .csv
 print('Creation of .csv.')
-signalsToCsvs(args.input, labels, signals, sampleRates)
