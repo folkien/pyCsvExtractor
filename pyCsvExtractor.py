@@ -62,6 +62,8 @@ parser.add_argument('-df', '--dateformat', type=str, nargs='?', const='%Y-%m-%d 
                     required=False, help='Data time format')
 parser.add_argument('-df2', '--dateformat2', type=str, nargs='?', const='%Y-%m-%d %H:%M:%S,%f', default='%Y-%m-%d %H:%M:%S',
                     required=False, help='Data time format')
+parser.add_argument('-dd', '--dropduplicates', action='store_true',
+                    required=False, help='Drops duplicates.')
 parser.add_argument('-x', '--synchronize-with-file', type=str,
                     required=False, help='Synchronize timestamps with file')
 parser.add_argument('-r', '--removeEqualTo', type=float,
@@ -83,6 +85,9 @@ if (args.removems is not None):
     for index in range(len(data[data.columns[0]])):
         element = data[data.columns[0]][index]
         data[data.columns[0]].values[index] = element.replace(microsecond=0)
+
+if (args.dropduplicates is not None):
+    data.drop_duplicates(data.columns[0], inplace=True)
 
 # Remove all equal to values from column 1
 if (args.removeEqualTo is not None):
