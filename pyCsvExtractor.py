@@ -5,37 +5,45 @@ import argparse
 import datetime as dt
 
 
-def signalsToCsvs(filename, labels, signals, sampleRates):
-    ''' Export all signals to multiple .csv'''
-    for i in range(len(signals)):
-        filepath = filename+labels[i]+'.csv'
-        with open(filepath, 'w+') as f:
-            # Labels
-            f.write('Time[s]%c%s\n' % (separator, labels[i]))
+def CsvToDataframe(filename):
+    ''' Reads csv to dataframe'''
+    # Open file
+    data = pd.read_csv(filename, sep=args.separator,
+                       decimal=args.decimalpoint)
+    # Cast to datetime
+    data[data.columns[0]] = pd.to_datetime(
+        data[data.columns[0]], format=args.dataformat)
 
-            # Prepare time values
-            if (args.timeAbsolute):
-                time = startTime
-                delta = datetime.timedelta(seconds=1.0/sampleRates[i])
-            else:
-                time = 0
-                delta = 1.0/sampleRates[i]
+    return data
 
-            # Samples saving
-            for sample in signals[i]:
-                if (args.timeAbsolute):
-                    # Absolute time used
-                    text = '%s%c%2.2f\n' % (time.strftime(
-                        '%Y-%m-%d %H:%M:%S.%f'), separator, sample)
-                else:
-                    # Relative time used
-                    text = '%2.4f%c%2.2f\n' % (time, separator, sample)
-                time += delta
-                # Decimal mark conversion
-                if (args.decimalpoint):
-                    text = text.replace('.', ',')
-                # Save
-                f.write(text)
+
+def GetBeginEndTimestamps(data):
+    '''
+        First column treat as timestamp index.
+        Returns begin, end
+    '''
+    return data[data.columns[0]][0], data[data.columns[0]][-1]
+
+
+def SynchronizeDatetime(data, filename):
+    ''' Synchronize datatime from file with given pands dataframe '''
+    data2 = CsvToDataframe(filename)
+
+    # Get begin end timestamps
+    begin1, end1 = GetBeginEndTimestamps(data)
+    begin2, end2 = GetBeginEndTimestamps(data2)
+
+    # Select common range
+    if (end1 < begin1) or (end2 < begin2):
+        print('Error! No common range!')
+    else:
+        begin = max(begin1, begin2)
+        end = min(end1, end2)
+
+        data = data[data[data.columns[0]] >= begin]
+        data = data[data[data.columns[0]] <= end]
+
+    return data
 
 
 # Arguments and config
@@ -55,23 +63,21 @@ parser.add_argument('-r', '--removeEqualTo', type=float,
                     required=False, help='Remove all elements equal to.')
 parser.add_argument('-rms', '--removems', action='store_true',
                     required=False, help='Remove miliseconds from all datetime fields.')
-parser.add_argument('-rt', '--removetime', action='store_true',
-                    required=False, help='Remove time from all datetime fields.')
 args = parser.parse_args()
 
 if (args.separator is not None):
     separator = args.separator
 
 # Open file
-data = pd.read_csv(args.input, sep=args.separator,
-                   decimal=args.decimalpoint)
-# Cast to datetime
-data[data.columns[0]] = pd.to_datetime(
-    data[data.columns[0]], format=args.dataformat)
+data = CsvToDataframe(args.input)
 
 # Remove all equal to values from column 1
 if (args.removeEqualTo is not None):
     data = data[data[data.columns[1]] != args.removeEqualTo]
+
+# Synchronize datetime with other file
+if (args.synchronize_with_file is not None):
+    data = SynchronizeDatetime(data, args.synchronize_with_file)
 
 
 print(data.values)
