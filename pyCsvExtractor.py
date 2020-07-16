@@ -49,7 +49,7 @@ parser.add_argument('-s', '--separator', type=str, nargs='?', const=';',
                     required=False, help='Data CSV separator')
 parser.add_argument('-x', '--synchronize-with-file', type=str,
                     required=False, help='Synchronize timestamps with file')
-parser.add_argument('-r', '--removeEqualTo', type=str,
+parser.add_argument('-r', '--removeEqualTo', type=float,
                     required=False, help='Remove all elements equal to.')
 parser.add_argument('-rms', '--removems', action='store_true',
                     required=False, help='Remove miliseconds from all datetime fields.')
@@ -68,7 +68,15 @@ def dateparse(x): return pd.datetime.strptime(x, '%Y-%m-%d %H:%M:%S,%f')
 
 data = pd.read_csv(args.input, sep=args.separator,
                    decimal=args.decimalpoint, parse_dates=True, date_parser=dateparse)
-print(data.values)
+
+# Cast to datetime
+
+# Remove all equal to values from column 1
+if (args.removeEqualTo is not None):
+    data = data[data[data.columns[1]] != args.removeEqualTo]
+
+
+print(data)
 
 # Create .csv
 print('Creation of .csv.')
