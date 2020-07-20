@@ -95,12 +95,12 @@ print('Data columns %u.' % len(data.columns))
 print('Data rows %u.' % len(data))
 
 # Remove miliseconds
-if (args.removems is not None):
+if (args.removems is True):
     for index in range(len(data[data.columns[0]])):
         element = data[data.columns[0]][index]
         data[data.columns[0]].values[index] = element.replace(microsecond=0)
 
-if (args.dropduplicates is not None):
+if (args.dropduplicates is True):
     length = len(data)
     data.drop_duplicates(data.columns[0], inplace=True)
     newLength = len(data)
@@ -115,7 +115,8 @@ if (args.removeEqualTo is not None):
 
 # Filter gross errors
 if (args.filterErrors is not None):
-    data = data.rolling(args.filterErrors, axis=0).apply(FilterGrossErrors)
+    data = data[[data.columns[1]]].rolling(
+        args.filterErrors).apply(FilterGrossErrors)
 
 # Synchronize datetime with other file
 if (args.synchronize_with_file is not None):
