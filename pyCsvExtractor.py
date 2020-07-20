@@ -87,11 +87,17 @@ if (args.removems is not None):
         data[data.columns[0]].values[index] = element.replace(microsecond=0)
 
 if (args.dropduplicates is not None):
+    length = len(data)
     data.drop_duplicates(data.columns[0], inplace=True)
+    newLength = len(data)
+    print('Dropped %u rows.' % (length-newLength))
 
 # Remove all equal to values from column 1
 if (args.removeEqualTo is not None):
+    length = len(data)
     data = data[data[data.columns[1]] != args.removeEqualTo]
+    newLength = len(data)
+    print('Dropped %u rows.' % (length-newLength))
 
 # Synchronize datetime with other file
 if (args.synchronize_with_file is not None):
