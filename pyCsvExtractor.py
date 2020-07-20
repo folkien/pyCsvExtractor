@@ -49,6 +49,18 @@ def SynchronizeDatetime(data, filename):
     return data
 
 
+def FilterGrossErrors(window):
+    ''' Filter gross errors from data window'''
+    average = sum(window) / len(window)
+    sample = window[-1]
+    diffrence = abs(average-sample)
+    # If more than 100% diffrence
+    if (diffrence > average):
+        print('Filtered %2.2f' % sample)
+        return average
+    return sample
+
+
 # Arguments and config
 # #####################################################
 parser = argparse.ArgumentParser()
@@ -64,6 +76,8 @@ parser.add_argument('-df2', '--dateformat2', type=str, nargs='?', const='%Y-%m-%
                     required=False, help='Data time format')
 parser.add_argument('-dd', '--dropduplicates', action='store_true',
                     required=False, help='Drops duplicates.')
+parser.add_argument('-f', '--filterErrors', type=int,
+                    required=False, help='Filter gross errors window size.')
 parser.add_argument('-x', '--synchronize-with-file', type=str,
                     required=False, help='Synchronize timestamps with file')
 parser.add_argument('-r', '--removeEqualTo', type=float,
@@ -98,6 +112,10 @@ if (args.removeEqualTo is not None):
     data = data[data[data.columns[1]] != args.removeEqualTo]
     newLength = len(data)
     print('Dropped %u rows.' % (length-newLength))
+
+# Filter gross errors
+if (args.filterErrors is not None):
+    data = data.rolling(args.filterErrors, axis=0).apply(FilterGrossErrors)
 
 # Synchronize datetime with other file
 if (args.synchronize_with_file is not None):
