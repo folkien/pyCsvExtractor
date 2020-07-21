@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import argparse
 import datetime as dt
+import matplotlib.pyplot as plt
 
 # List of all separators
 separators = [ ',', ';', '.', '#', ':', '\t' ]
@@ -10,6 +11,7 @@ separators = [ ',', ';', '.', '#', ':', '\t' ]
 # List of possible datetime timestamp formats
 timestamp_formats = [
 '%Y-%m-%d %H:%M:%S,%f',
+'%Y-%m-%d %H:%M:%S.%f',
 '%Y-%m-%d %H:%M:%S',
 '%Y-%m-%d %H:%M',
 '%Y-%m-%d',
@@ -29,8 +31,21 @@ def StrDateToDatetime(string):
 
     return date
 
+def DetermineDatetimeFormat(string):
+    ''' Returns founded datetimeformat'''
+    date = None
+    for dtformat in timestamp_formats:
+        try:
+            date = dt.datetime.strptime(string,dtformat)
+        except:
+            ''' Do nothing '''
+        if (date is not None):
+            return dtformat
 
-def CsvToDataframe(filename, format):
+    return None
+
+
+def CsvToDataframe(filename):
     ''' Reads csv to dataframe'''
     # Open file
     data = pd.read_csv(filename, sep=args.separator, decimal=args.decimalpoint)
@@ -38,6 +53,12 @@ def CsvToDataframe(filename, format):
     # Firs column is treat as index/timestamp.
     # If first column is string then try to convert it to datetime
     if type(data[data.columns[0]][0]) == str:
+        # Determine datetime format
+        format = DetermineDatetimeFormat(data[data.columns[0]][0])
+        if (format is None):
+            print("Unknown datetime format!")
+            return
+        
         # Change to dt date timestamp
         for index in range(len(data[data.columns[0]])):
             text = data[data.columns[0]][index]
@@ -85,9 +106,13 @@ def GetBeginEndTimestamps(data):
     return data[data.columns[0]].iloc[0], data[data.columns[0]].iloc[-1]
 
 
-def SynchronizeDatetime(data, filename):
-    ''' Synchronize datatime from file with given pands dataframe '''
-    data2 = CsvToDataframe(filename, args.dateformat2)
+def Synchronize(data, filename):
+    ''' 
+        Synchronize datatime of data with another csv file.
+        - cuts maximum similar fragment
+        - resample data
+    '''
+    data2 = CsvToDataframe(filename)
 
     # Get begin end timestamps
     begin1, end1 = GetBeginEndTimestamps(data)
@@ -118,6 +143,26 @@ def FilterGrossErrors(window):
         return average
     return sample
 
+def Preview(data, offset=25, length=10):
+    ''' Previews data first two columns'''
+    if (len(data.columns)>=2):
+        framesize  =  int(len(data) * (100/length))
+        frameoffset = int(len(data) * (100/length))
+        t = data[data.columns[0]][frameoffset:frameoffset+framesize]
+        y = data[data.columns[1]][frameoffset:frameoffset+framesize]
+        
+        fig = plt.figure(figsize=(16.0, 9.0))
+        plt.plot(t,y)
+        plt.ylabel('%s' % data.columns[1])
+        plt.xlabel('%s' % data.columns[0])
+        plt.title('Preview')
+        plt.legend(loc='upper left')
+        plt.minorticks_on()
+        plt.grid(b=True, which='major', axis='both', color='k')
+        plt.grid(b=True, which='minor', axis='both')
+        plt.show()
+
+
 def PrintInfo(data):
     ''' Prints info about dataframe '''
     print('Data rows %u.' % len(data))
@@ -144,10 +189,6 @@ parser.add_argument('-s', '--separator', type=str, nargs='?', const=';',
                     required=False, help='Data CSV separator')
 parser.add_argument('-db', '--date-base', type=str,
                     required=False, help='Start basedate of csv')
-parser.add_argument('-df', '--dateformat', type=str, nargs='?', const='%Y-%m-%d %H:%M:%S,%f', default='%Y-%m-%d %H:%M:%S,%f',
-                    required=False, help='Data time format')
-parser.add_argument('-df2', '--dateformat2', type=str, nargs='?', const='%Y-%m-%d %H:%M:%S,%f', default='%Y-%m-%d %H:%M:%S',
-                    required=False, help='Data time format')
 parser.add_argument('-dd', '--dropduplicates', action='store_true',
                     required=False, help='Drops duplicates.')
 parser.add_argument('-f', '--filterErrors', type=int,
@@ -164,9 +205,11 @@ if (args.separator is not None):
     separator = args.separator
 
 # Open file
-data = CsvToDataframe(args.input, args.dateformat)
+data = CsvToDataframe(args.input)
 
 PrintInfo(data)
+# Preview 
+Preview(data)
 
 # Remove miliseconds
 if (args.removems is True):
@@ -194,9 +237,7 @@ if (args.filterErrors is not None):
 
 # Synchronize datetime with other file
 if (args.synchronize_with_file is not None):
-    data = SynchronizeDatetime(data, args.synchronize_with_file)
-    
-# Preview of data TODO
+    data = Synchronize(data, args.synchronize_with_file)
 
 # Save data
 DataframeToCsv(data)
