@@ -10,11 +10,13 @@ def CsvToDataframe(filename, format):
     # Open file
     data = pd.read_csv(filename, sep=args.separator, decimal=args.decimalpoint)
 
-    # Change to dt date timestamp
-    for index in range(len(data[data.columns[0]])):
-        text = data[data.columns[0]][index]
-        data[data.columns[0]].values[index] = dt.datetime.strptime(
-            text, format)
+    # If first column is date timestamp as string
+    if type(data[data.columns[0]][0]) == str:
+        # Change to dt date timestamp
+        for index in range(len(data[data.columns[0]])):
+            text = data[data.columns[0]][index]
+            data[data.columns[0]].values[index] = dt.datetime.strptime(
+                text, format)
 
     return data
 
@@ -60,6 +62,15 @@ def FilterGrossErrors(window):
         return average
     return sample
 
+def PrintInfo(data):
+    ''' Prints info about dataframe '''
+    print('Data rows %u.' % len(data))
+    print('Data columns %u.' % len(data.columns))
+    for i,column in enumerate(data.columns):
+        print("Column %u '%s'." % (i,column))
+        print(type(data[data.columns[i]][0]))
+        
+
 
 # Arguments and config
 # #####################################################
@@ -91,8 +102,8 @@ if (args.separator is not None):
 
 # Open file
 data = CsvToDataframe(args.input, args.dateformat)
-print('Data columns %u.' % len(data.columns))
-print('Data rows %u.' % len(data))
+
+PrintInfo(data)
 
 # Remove miliseconds
 if (args.removems is True):
