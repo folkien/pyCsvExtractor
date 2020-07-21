@@ -4,14 +4,15 @@ import pandas as pd
 import argparse
 import datetime as dt
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d  
 
 # List of all separators
 separators = [ ',', ';', '.', '#', ':', '\t' ]
 
 # List of possible datetime timestamp formats
 timestamp_formats = [
-'%Y-%m-%d %H:%M:%S,%f',
 '%Y-%m-%d %H:%M:%S.%f',
+'%Y-%m-%d %H:%M:%S,%f',
 '%Y-%m-%d %H:%M:%S',
 '%Y-%m-%d %H:%M',
 '%Y-%m-%d',
@@ -64,6 +65,8 @@ def CsvToDataframe(filename):
             text = data[data.columns[0]][index]
             data[data.columns[0]].values[index] = dt.datetime.strptime(
                 text, format)
+        
+        data = data.set_index(data.columns[0],drop=False)
     
     # Add base datetime to first column
     if (args.date_base is not None):
@@ -76,6 +79,7 @@ def CsvToDataframe(filename):
             column.append(base + dt.timedelta(seconds=data[data.columns[0]][index]))
 
         data[data.columns[0]] = column
+        data = data.set_index(data.columns[0],drop=False)
 
     return data
 
@@ -94,7 +98,7 @@ def DataframeToCsv(data):
         i += 1
         
     print('Creation of .csv.')
-    data.to_csv('Changed.'+args.input, index=False,
+    data.to_csv('Changed.'+args.input, index=False, date_format=timestamp_formats[0],
                 sep=separator, decimal=args.decimalpoint)
 
 
@@ -105,6 +109,13 @@ def GetBeginEndTimestamps(data):
     '''
     return data[data.columns[0]].iloc[0], data[data.columns[0]].iloc[-1]
 
+def Resample(df, newLength):
+    ''' Resample dataframe '''
+    print("Resampling from %u to %u." % (len(df),newLength))
+    time_delta = (df.index[-1] - df.index[0]) / (newLength-1)
+    new_index = pd.date_range(start=df.index[0], end=df.index[-1], freq=time_delta)
+    f = interp1d(df.index.astype('i8'), df.values.T)
+    return pd.DataFrame(data=f(new_index.astype('i8')).T, index=new_index)
 
 def Synchronize(data, filename):
     ''' 
@@ -113,6 +124,10 @@ def Synchronize(data, filename):
         - resample data
     '''
     data2 = CsvToDataframe(filename)
+    
+    # Get sampling interval
+    fps1 = data[data.columns[0]][1] - data[data.columns[0]][0]
+    fps2 = data2[data2.columns[0]][1] - data2[data2.columns[0]][0]
 
     # Get begin end timestamps
     begin1, end1 = GetBeginEndTimestamps(data)
@@ -125,10 +140,27 @@ def Synchronize(data, filename):
         begin = max(begin1, begin2)
         end = min(end1, end2)
 
+        # Cut data 1
         data = data[data[data.columns[0]] >= begin]
         data = data[data[data.columns[0]] <= end]
+        length1 = len(data)
+        # Cut data 2
+        data2 = data2[data2[data2.columns[0]] >= begin]
+        data2 = data2[data2[data2.columns[0]] <= end]
+        length2 = len(data2)
+        
         print('Selected data from range', begin, 'to', end)
-
+        print("Data1 : %u samples." % length1)
+        print(fps1)
+        print("Data2 : %u samples." % length2)
+        print(fps2)
+        
+        # Resample data2 to data 1
+        if (length1>length2):
+            data2 = Resample(data2, length1)
+        else:
+            data = Resample(data, length2)
+        
     return data
 
 
