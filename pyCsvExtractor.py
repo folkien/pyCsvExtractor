@@ -4,27 +4,28 @@ import pandas as pd
 import argparse
 import datetime as dt
 import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d  
+from scipy.interpolate import interp1d
 
 # List of all separators
-separators = [ ',', ';', '.', '#', ':', '\t' ]
+separators = [',', ';', '.', '#', ':', '\t']
 
 # List of possible datetime timestamp formats
 timestamp_formats = [
-'%Y-%m-%d %H:%M:%S.%f',
-'%Y-%m-%d %H:%M:%S,%f',
-'%Y-%m-%d %H:%M:%S',
-'%Y-%m-%d %H:%M',
-'%Y-%m-%d',
-'%H:%M',
+    '%Y-%m-%d %H:%M:%S.%f',
+    '%Y-%m-%d %H:%M:%S,%f',
+    '%Y-%m-%d %H:%M:%S',
+    '%Y-%m-%d %H:%M',
+    '%Y-%m-%d',
+    '%H:%M',
 ]
+
 
 def StrDateToDatetime(string):
     ''' Creates datetime from string formatted date.'''
     date = None
     for format in timestamp_formats:
         try:
-            date = dt.datetime.strptime(string,format)
+            date = dt.datetime.strptime(string, format)
         except:
             ''' Do nothing '''
         if (date is not None):
@@ -32,12 +33,13 @@ def StrDateToDatetime(string):
 
     return date
 
+
 def DetermineDatetimeFormat(string):
     ''' Returns founded datetimeformat'''
     date = None
     for dtformat in timestamp_formats:
         try:
-            date = dt.datetime.strptime(string,dtformat)
+            date = dt.datetime.strptime(string, dtformat)
         except:
             ''' Do nothing '''
         if (date is not None):
@@ -57,55 +59,58 @@ def CsvToDataframe(filename):
         # Determine datetime format
         format = DetermineDatetimeFormat(data[data.columns[0]][0])
         if (format is None):
-            print("Unknown datetime format!")
+            print('Unknown datetime format!')
             return
-        
+
         # Change to dt date timestamp
         for index in range(len(data[data.columns[0]])):
             text = data[data.columns[0]][index]
             data[data.columns[0]].values[index] = dt.datetime.strptime(
                 text, format)
-        
-        data = data.set_index(data.columns[0],drop=False)
-    
+
+        data = data.set_index(data.columns[0], drop=False)
+
     # Add base datetime to first column
     if (args.date_base is not None):
-        print ("Base date given %s." % (args.date_base))
+        print('Base date given %s.' % (args.date_base))
         base = StrDateToDatetime(args.date_base)
 
         # Change to dt date timestamp
         column = []
         for index in range(len(data[data.columns[0]])):
-            column.append(base + dt.timedelta(seconds=data[data.columns[0]][index]))
+            column.append(
+                base + dt.timedelta(seconds=data[data.columns[0]][index]))
 
         data[data.columns[0]] = column
-        data = data.set_index(data.columns[0],drop=False)
+        data = data.set_index(data.columns[0], drop=False)
 
     return data
+
 
 def DataframeToCsv(data):
     ''' Dataframe to csv save'''
     separator = args.separator
-    
+
     # If separator longer than 1 character, trim it
     if (type(separator) == str):
         separator = separator[0]
-        
+
     # If separator == decimalpoint then choose other
     i = 0
     while (separator == args.decimalpoint):
         separator = separators[i]
         i += 1
-        
+
     print('Creation of .csv.')
     data.to_csv('Changed.'+args.input, index=False, date_format=timestamp_formats[0],
                 sep=separator, decimal=args.decimalpoint)
 
+
 def ColumnsToCsvs(data):
     ''' Export all signals to multiple .csv'''
-    for i,name in enumerate(data.columns):
+    for i, name in enumerate(data.columns):
         filepath = args.input+name+'.csv'
-        print("Write to %s." % filepath)
+        print('Write to %s.' % filepath)
         with open(filepath, 'w+') as f:
             # Labels
             f.write('Time[s]%c%s\n' % (args.separator, name))
@@ -113,11 +118,12 @@ def ColumnsToCsvs(data):
             # Samples saving
             for index, sample in enumerate(data[name]):
                 time = data.index[index]
-                text = '%s%c' % (time.strftime(timestamp_formats[0]), args.separator)
+                text = '%s%c' % (time.strftime(
+                    timestamp_formats[0]), args.separator)
                 # Decimal mark conversion
                 if (args.decimalpoint):
                     text += str(sample).replace('.', ',')
-                text += "\n"
+                text += '\n'
                 # Save
                 f.write(text)
 
@@ -129,22 +135,25 @@ def GetBeginEndTimestamps(data):
     '''
     return data[data.columns[0]].iloc[0], data[data.columns[0]].iloc[-1]
 
+
 def Resample(df, newLength):
     ''' Resample dataframe '''
-    print("Resampling from %u to %u." % (len(df),newLength))
+    print('Resampling from %u to %u.' % (len(df), newLength))
     time_delta = (df.index[-1] - df.index[0]) / (newLength-1)
-    new_index = pd.date_range(start=df.index[0], end=df.index[-1], freq=time_delta)
-    f = interp1d(df.index.astype('i8'), df.values.T)
+    new_index = pd.date_range(
+        start=df.index[0], end=df.index[-1], freq=time_delta)
+    f = interp1d(df.index.astype('i8'), df[df.columns[1]])
     return pd.DataFrame(data=f(new_index.astype('i8')).T, index=new_index)
 
+
 def Synchronize(data, filename):
-    ''' 
+    '''
         Synchronize datatime of data with another csv file.
         - cuts maximum similar fragment
         - resample data
     '''
     data2 = CsvToDataframe(filename)
-    
+
     # Get sampling interval
     fps1 = data[data.columns[0]][1] - data[data.columns[0]][0]
     fps2 = data2[data2.columns[0]][1] - data2[data2.columns[0]][0]
@@ -168,19 +177,36 @@ def Synchronize(data, filename):
         data2 = data2[data2[data2.columns[0]] >= begin]
         data2 = data2[data2[data2.columns[0]] <= end]
         length2 = len(data2)
-        
+
         print('Selected data from range', begin, 'to', end)
-        print("Data1 : %u samples." % length1)
+        print('Data1 : %u samples.' % length1)
         print(fps1)
-        print("Data2 : %u samples." % length2)
+        print('Data2 : %u samples.' % length2)
         print(fps2)
-        
+
         # Resample data2 to data 1
-        if (length1>length2):
+        if (length1 > length2):
             data2 = Resample(data2, length1)
+            data = data.drop(columns=data.columns[0])
         else:
             data = Resample(data, length2)
-        
+            data2 = data2.drop(columns=data2.columns[0])
+
+        # preview of data
+        fig = plt.figure(figsize=(16.0, 9.0))
+        plt.plot(data.index, data/1000)  # @ TODO gain here
+        plt.plot(data2.index, data2)
+        plt.xlabel('%s' % data.columns[0])
+        plt.title('Preview')
+        plt.legend(loc='upper left')
+        plt.minorticks_on()
+        plt.grid(b=True, which='major', axis='both', color='k')
+        plt.grid(b=True, which='minor', axis='both')
+        plt.show()
+
+        # Join
+        data = data.reset_index(drop=True).join(data2.reset_index(drop=True))
+
     return data
 
 
@@ -195,16 +221,17 @@ def FilterGrossErrors(window):
         return average
     return sample
 
+
 def Preview(data, offset=25, length=10):
     ''' Previews data first two columns'''
-    if (len(data.columns)>=2):
-        framesize  =  int(len(data) * (length/100))
+    if (len(data.columns) >= 2):
+        framesize = int(len(data) * (length/100))
         frameoffset = int(len(data) * (length/100))
         t = data[data.columns[0]][frameoffset:frameoffset+framesize]
         y = data[data.columns[1]][frameoffset:frameoffset+framesize]
-        
+
         fig = plt.figure(figsize=(16.0, 9.0))
-        plt.plot(t,y)
+        plt.plot(t, y)
         plt.ylabel('%s' % data.columns[1])
         plt.xlabel('%s' % data.columns[0])
         plt.title('Preview')
@@ -219,15 +246,14 @@ def PrintInfo(data):
     ''' Prints info about dataframe '''
     print('Data rows %u.' % len(data))
     print('Data columns %u.' % len(data.columns))
-    for i,column in enumerate(data.columns):
-        print("Column %u '%s'." % (i,column))
+    for i, column in enumerate(data.columns):
+        print("Column %u '%s'." % (i, column))
         print(type(data[data.columns[i]][0]))
-        #@ TODO Variance
-        #@ TODO Max
-        #@ TODO Min
-        #@ TODO Mean
-        #@ TODO Median
-        
+        # @ TODO Variance
+        # @ TODO Max
+        # @ TODO Min
+        # @ TODO Mean
+        # @ TODO Median
 
 
 # Arguments and config
@@ -262,8 +288,9 @@ if (args.separator is not None):
 data = CsvToDataframe(args.input)
 
 PrintInfo(data)
-# Preview 
-Preview(data)
+# Preview of opened data
+if (args.synchronize_with_file is None):
+    Preview(data)
 
 # Remove miliseconds
 if (args.removems is True):
