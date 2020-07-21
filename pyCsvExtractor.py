@@ -101,6 +101,26 @@ def DataframeToCsv(data):
     data.to_csv('Changed.'+args.input, index=False, date_format=timestamp_formats[0],
                 sep=separator, decimal=args.decimalpoint)
 
+def ColumnsToCsvs(data):
+    ''' Export all signals to multiple .csv'''
+    for i,name in enumerate(data.columns):
+        filepath = args.input+name+'.csv'
+        print("Write to %s." % filepath)
+        with open(filepath, 'w+') as f:
+            # Labels
+            f.write('Time[s]%c%s\n' % (args.separator, name))
+
+            # Samples saving
+            for index, sample in enumerate(data[name]):
+                time = data.index[index]
+                text = '%s%c' % (time.strftime(timestamp_formats[0]), args.separator)
+                # Decimal mark conversion
+                if (args.decimalpoint):
+                    text += str(sample).replace('.', ',')
+                text += "\n"
+                # Save
+                f.write(text)
+
 
 def GetBeginEndTimestamps(data):
     '''
@@ -225,6 +245,8 @@ parser.add_argument('-dd', '--dropduplicates', action='store_true',
                     required=False, help='Drops duplicates.')
 parser.add_argument('-f', '--filterErrors', type=int,
                     required=False, help='Filter gross errors window size.')
+parser.add_argument('-sc', '--separate-columns', action='store_true',
+                    required=False, help='Separate columns to multi files')
 parser.add_argument('-x', '--synchronize-with-file', type=str,
                     required=False, help='Synchronize timestamps with file')
 parser.add_argument('-r', '--removeEqualTo', type=float,
@@ -271,5 +293,10 @@ if (args.filterErrors is not None):
 if (args.synchronize_with_file is not None):
     data = Synchronize(data, args.synchronize_with_file)
 
-# Save data
-DataframeToCsv(data)
+
+# Save as separated column
+if (args.separate_columns is True):
+    ColumnsToCsvs(data)
+# Save together
+else:
+    DataframeToCsv(data)
