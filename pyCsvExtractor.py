@@ -146,8 +146,8 @@ def FilterGrossErrors(window):
 def Preview(data, offset=25, length=10):
     ''' Previews data first two columns'''
     if (len(data.columns)>=2):
-        framesize  =  int(len(data) * (100/length))
-        frameoffset = int(len(data) * (100/length))
+        framesize  =  int(len(data) * (length/100))
+        frameoffset = int(len(data) * (length/100))
         t = data[data.columns[0]][frameoffset:frameoffset+framesize]
         y = data[data.columns[1]][frameoffset:frameoffset+framesize]
         
