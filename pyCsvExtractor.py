@@ -4,21 +4,77 @@ import pandas as pd
 import argparse
 import datetime as dt
 
+# List of all separators
+separators = [ ',', ';', '.', '#', ':', '\t' ]
+
+# List of possible datetime timestamp formats
+timestamp_formats = [
+'%Y-%m-%d %H:%M:%S,%f',
+'%Y-%m-%d %H:%M:%S',
+'%Y-%m-%d %H:%M',
+'%Y-%m-%d',
+'%H:%M',
+]
+
+def StrDateToDatetime(string):
+    ''' Creates datetime from string formatted date.'''
+    date = None
+    for format in timestamp_formats:
+        try:
+            date = dt.datetime.strptime(string,format)
+        except:
+            ''' Do nothing '''
+        if (date is not None):
+            break
+
+    return date
+
 
 def CsvToDataframe(filename, format):
     ''' Reads csv to dataframe'''
     # Open file
     data = pd.read_csv(filename, sep=args.separator, decimal=args.decimalpoint)
 
-    # If first column is date timestamp as string
+    # Firs column is treat as index/timestamp.
+    # If first column is string then try to convert it to datetime
     if type(data[data.columns[0]][0]) == str:
         # Change to dt date timestamp
         for index in range(len(data[data.columns[0]])):
             text = data[data.columns[0]][index]
             data[data.columns[0]].values[index] = dt.datetime.strptime(
                 text, format)
+    
+    # Add base datetime to first column
+    if (args.date_base is not None):
+        print ("Base date given %s." % (args.date_base))
+        base = StrDateToDatetime(args.date_base)
+
+        # Change to dt date timestamp
+        column = []
+        for index in range(len(data[data.columns[0]])):
+            column.append(base + dt.timedelta(seconds=data[data.columns[0]][index]))
+
+        data[data.columns[0]] = column
 
     return data
+
+def DataframeToCsv(data):
+    ''' Dataframe to csv save'''
+    separator = args.separator
+    
+    # If separator longer than 1 character, trim it
+    if (type(separator) == str):
+        separator = separator[0]
+        
+    # If separator == decimalpoint then choose other
+    i = 0
+    while (separator == args.decimalpoint):
+        separator = separators[i]
+        i += 1
+        
+    print('Creation of .csv.')
+    data.to_csv('Changed.'+args.input, index=False,
+                sep=separator, decimal=args.decimalpoint)
 
 
 def GetBeginEndTimestamps(data):
@@ -69,6 +125,11 @@ def PrintInfo(data):
     for i,column in enumerate(data.columns):
         print("Column %u '%s'." % (i,column))
         print(type(data[data.columns[i]][0]))
+        #@ TODO Variance
+        #@ TODO Max
+        #@ TODO Min
+        #@ TODO Mean
+        #@ TODO Median
         
 
 
@@ -81,6 +142,8 @@ parser.add_argument('-d', '--decimalpoint', type=str, nargs='?', const='.',
                     required=False, help='Data CSV separator')
 parser.add_argument('-s', '--separator', type=str, nargs='?', const=';',
                     required=False, help='Data CSV separator')
+parser.add_argument('-db', '--date-base', type=str,
+                    required=False, help='Start basedate of csv')
 parser.add_argument('-df', '--dateformat', type=str, nargs='?', const='%Y-%m-%d %H:%M:%S,%f', default='%Y-%m-%d %H:%M:%S,%f',
                     required=False, help='Data time format')
 parser.add_argument('-df2', '--dateformat2', type=str, nargs='?', const='%Y-%m-%d %H:%M:%S,%f', default='%Y-%m-%d %H:%M:%S',
@@ -132,9 +195,8 @@ if (args.filterErrors is not None):
 # Synchronize datetime with other file
 if (args.synchronize_with_file is not None):
     data = SynchronizeDatetime(data, args.synchronize_with_file)
+    
+# Preview of data TODO
 
-
-# Create .csv
-print('Creation of .csv.')
-data.to_csv('Changed.'+args.input, index=False,
-            sep=args.separator, decimal=args.decimalpoint)
+# Save data
+DataframeToCsv(data)

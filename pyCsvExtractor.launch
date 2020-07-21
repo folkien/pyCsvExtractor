@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="org.python.pydev.debug.regularLaunchConfigurationType">
-<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
-<listEntry value="/pyCsvExtractor/pyCsvExtractor.py"/>
-</listAttribute>
-<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
-<listEntry value="1"/>
-</listAttribute>
-<stringAttribute key="org.eclipse.ui.externaltools.ATTR_LOCATION" value="${workspace_loc:pyCsvExtractor/pyCsvExtractor.py}"/>
-<stringAttribute key="org.eclipse.ui.externaltools.ATTR_OTHER_WORKING_DIRECTORY" value=""/>
-<stringAttribute key="org.eclipse.ui.externaltools.ATTR_TOOL_ARGUMENTS" value="-i data1.csv -d ',' -s ';'  -f 4 -df '%Y-%m-%d %H:%M:%S'"/>
-<stringAttribute key="org.python.pydev.debug.ATTR_INTERPRETER" value="__default"/>
-<stringAttribute key="org.python.pydev.debug.ATTR_PROJECT" value="pyCsvExtractor"/>
-<stringAttribute key="process_factory_id" value="org.python.pydev.debug.processfactory.PyProcessFactory"/>
+    <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+        <listEntry value="/pyCsvExtractor/pyCsvExtractor.py"/>
+    </listAttribute>
+    <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+        <listEntry value="1"/>
+    </listAttribute>
+    <stringAttribute key="org.eclipse.ui.externaltools.ATTR_LOCATION" value="${workspace_loc:pyCsvExtractor/pyCsvExtractor.py}"/>
+    <stringAttribute key="org.eclipse.ui.externaltools.ATTR_OTHER_WORKING_DIRECTORY" value=""/>
+    <stringAttribute key="org.eclipse.ui.externaltools.ATTR_TOOL_ARGUMENTS" value="-i max30001-ecg_2020-07-21_11-56-22.csv -s ', ' -d ',' -db '2020-07-21 11:56:22'"/>
+    <stringAttribute key="org.python.pydev.debug.ATTR_INTERPRETER" value="__default"/>
+    <stringAttribute key="org.python.pydev.debug.ATTR_PROJECT" value="pyCsvExtractor"/>
+    <stringAttribute key="process_factory_id" value="org.python.pydev.debug.processfactory.PyProcessFactory"/>
 </launchConfiguration>
