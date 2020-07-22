@@ -188,7 +188,7 @@ def DataframeToCsv(data):
     # If separator == decimalpoint then choose other
     i = 0
     while (sep == decimalpoint):
-        sep = separators[i]
+        sep = separators[i][0]
         i += 1
 
     print('Creation of .csv.')
