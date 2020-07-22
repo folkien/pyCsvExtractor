@@ -4,7 +4,14 @@ import pandas as pd
 import argparse
 import datetime as dt
 import matplotlib.pyplot as plt
+import locale
 from scipy.interpolate import interp1d
+
+
+# defaults
+separator = None
+locale.setlocale(locale.LC_ALL, '')
+decimalpoint = (locale.localeconv()['decimal_point'])
 
 
 class SnaptoCursor(object):
@@ -40,7 +47,7 @@ class SnaptoCursor(object):
 
 
 # List of all separators
-separators = [',', ';', '.', '#', ':', '\t']
+separators = [', ', ',', ';', '.', '#', ':', '\t']
 
 # List of possible datetime timestamp formats
 timestamp_formats = [
@@ -70,6 +77,16 @@ def StrDateToDatetime(string):
     return date
 
 
+def DetermineSeparator(string):
+    ''' Returns founded separator'''
+    for fsep in separators:
+        if (string.find(fsep) != -1):
+            print('Separator is `%s`.' % (fsep))
+            return fsep
+
+    return None
+
+
 def DetermineDatetimeFormat(string):
     ''' Returns founded datetimeformat'''
     date = None
@@ -84,22 +101,10 @@ def DetermineDatetimeFormat(string):
     return None
 
 
-coords = []
-
-
 def onclick(event):
     ''' Store click coordinates '''
-    global ix, iy
     ix, iy = event.xdata, event.ydata
     print('x = %d, y = %d' % (ix, iy))
-
-    global coords
-    coords.append((ix, iy))
-
-    if len(coords) == 2:
-        fig.canvas.mpl_disconnect(cid)
-
-    return coords
 
 
 class Cursor(object):
@@ -126,8 +131,17 @@ class Cursor(object):
 
 def CsvToDataframe(filename):
     ''' Reads csv to dataframe'''
+    global separator
+    if (separator is None):
+        with open(filename, 'r') as f:
+            for i, line in enumerate(f):
+                # Based on second line
+                if (i == 1):
+                    separator = DetermineSeparator(line)
+                    break
+
     # Open file
-    data = pd.read_csv(filename, sep=args.separator, decimal=args.decimalpoint)
+    data = pd.read_csv(filename, sep=separator, decimal=decimalpoint)
 
     # Firs column is treat as index/timestamp.
     # If first column is string then try to convert it to datetime
@@ -165,21 +179,21 @@ def CsvToDataframe(filename):
 
 def DataframeToCsv(data):
     ''' Dataframe to csv save'''
-    separator = args.separator
+    sep = separator
 
     # If separator longer than 1 character, trim it
-    if (type(separator) == str):
-        separator = separator[0]
+    if (type(sep) == str):
+        sep = sep[0]
 
     # If separator == decimalpoint then choose other
     i = 0
-    while (separator == args.decimalpoint):
-        separator = separators[i]
+    while (sep == decimalpoint):
+        sep = separators[i]
         i += 1
 
     print('Creation of .csv.')
     data.to_csv('Changed.'+args.input, index=False, date_format=timestamp_formats[0],
-                sep=separator, decimal=args.decimalpoint)
+                sep=sep, decimal=decimalpoint)
 
 
 def ColumnsToCsvs(data):
@@ -189,15 +203,15 @@ def ColumnsToCsvs(data):
         print('Write to %s.' % filepath)
         with open(filepath, 'w+') as f:
             # Labels
-            f.write('Time[s]%c%s\n' % (args.separator, name))
+            f.write('Time[s]%c%s\n' % (separator, name))
 
             # Samples saving
             for index, sample in enumerate(data[name]):
                 time = data.index[index]
                 text = '%s%c' % (time.strftime(
-                    timestamp_formats[0]), args.separator)
+                    timestamp_formats[0]), separator)
                 # Decimal mark conversion
-                if (args.decimalpoint):
+                if (decimalpoint == ','):
                     text += str(sample).replace('.', ',')
                 text += '\n'
                 # Save
@@ -220,6 +234,14 @@ def Resample(df, newLength):
         start=df.index[0], end=df.index[-1], freq=time_delta)
     f = interp1d(df.index.astype('i8'), df[df.columns[1]])
     return pd.DataFrame(data=f(new_index.astype('i8')).T, index=new_index)
+
+
+def DataCut(data, begin, end):
+    ''' Cut data with begin and end index'''
+    data = data[data[data.columns[0]] >= begin]
+    data = data[data[data.columns[0]] <= end]
+    length = len(data)
+    return data, length
 
 
 def Synchronize(data, filename):
@@ -246,13 +268,9 @@ def Synchronize(data, filename):
         end = min(end1, end2)
 
         # Cut data 1
-        data = data[data[data.columns[0]] >= begin]
-        data = data[data[data.columns[0]] <= end]
-        length1 = len(data)
+        data, length1 = DataCut(data, begin, end)
         # Cut data 2
-        data2 = data2[data2[data2.columns[0]] >= begin]
-        data2 = data2[data2[data2.columns[0]] <= end]
-        length2 = len(data2)
+        data2, length2 = DataCut(data2, begin, end)
 
         print('Selected data from range', begin, 'to', end)
         print('Data1 : %u samples.' % length1)
@@ -274,6 +292,7 @@ def Synchronize(data, filename):
 
         # preview of data
         fig = plt.figure(figsize=(16.0, 9.0))
+        cid = fig.canvas.mpl_connect('button_press_event', onclick)
         plt.plot(data.index, data/1000)  # @ TODO gain here
         plt.plot(data2.index, -data2)
         plt.xlabel('%s' % data.columns[0])
@@ -370,6 +389,9 @@ args = parser.parse_args()
 
 if (args.separator is not None):
     separator = args.separator
+
+if (args.decimalpoint is not None):
+    decimalpoint = args.decimalpoint
 
 # Open file
 data = CsvToDataframe(args.input)
