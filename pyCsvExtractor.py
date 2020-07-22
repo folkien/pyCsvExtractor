@@ -335,17 +335,9 @@ def Preview(data, offset=25, length=10):
         t = data[data.columns[0]][frameoffset:frameoffset+framesize]
         y = data[data.columns[1]][frameoffset:frameoffset+framesize]
 
-        View(t, y)
-#         fig = plt.figure(figsize=(16.0, 9.0))
-#         plt.plot(t, y)
-#         plt.ylabel('%s' % data.columns[1])
-#         plt.xlabel('%s' % data.columns[0])
-#         plt.title('Preview')
-#         plt.legend(loc='upper left')
-#         plt.minorticks_on()
-#         plt.grid(b=True, which='major', axis='both', color='k')
-#         plt.grid(b=True, which='minor', axis='both')
-#         plt.show()
+        view = View(t, y, xlabel=data.columns[0], ylabel=data.columns[1])
+        view.AddDataset(t, y)
+        view.Show()
 
 
 def PrintInfo(data):
