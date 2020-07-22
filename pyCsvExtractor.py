@@ -292,17 +292,9 @@ def Synchronize(data, filename):
             data2 = data2.drop(columns=data2.columns[0])
 
         # preview of data
-        fig = plt.figure(figsize=(16.0, 9.0))
-        cid = fig.canvas.mpl_connect('button_press_event', onclick)
-        plt.plot(data.index, data/1000)  # @ TODO gain here
-        plt.plot(data2.index, -data2)
-        plt.xlabel('%s' % data.columns[0])
-        plt.title('Preview')
-        plt.legend(loc='upper left')
-        plt.minorticks_on()
-        plt.grid(b=True, which='major', axis='both', color='k')
-        plt.grid(b=True, which='minor', axis='both')
-        plt.show()
+        view = View(data2.index, -data2)
+        view.AddDataset(data.index, data/1000)
+        view.Show()
 
         # Join - if data resampled
         if (args.resample is True):
