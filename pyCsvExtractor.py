@@ -48,7 +48,7 @@ class SnaptoCursor(object):
 
 
 # List of all separators
-separators = [', ', ',', ';', '.', '#', ':', '\t']
+separators = [', ', ';', '#', ':', ',', '.', '\t']
 
 # List of possible datetime timestamp formats
 timestamp_formats = [
@@ -199,18 +199,30 @@ def DataframeToCsv(data):
 
 def ColumnsToCsvs(data):
     ''' Export all signals to multiple .csv'''
+    sep = separator
+
+    # If separator longer than 1 character, trim it
+    if (type(sep) == str):
+        sep = sep[0]
+
+    # If separator == decimalpoint then choose other
+    i = 0
+    while (sep == decimalpoint):
+        sep = separators[i][0]
+        i += 1
+
     for i, name in enumerate(data.columns):
         filepath = args.input+name+'.csv'
         print('Write to %s.' % filepath)
         with open(filepath, 'w+') as f:
             # Labels
-            f.write('Time[s]%c%s\n' % (separator, name))
+            f.write('Time[s]%c%s\n' % (sep, name))
 
             # Samples saving
             for index, sample in enumerate(data[name]):
                 time = data.index[index]
                 text = '%s%c' % (time.strftime(
-                    timestamp_formats[0]), separator)
+                    timestamp_formats[0]), sep)
                 # Decimal mark conversion
                 if (decimalpoint == ','):
                     text += str(sample).replace('.', ',')
@@ -251,6 +263,8 @@ def Synchronize(data, filename):
         - cuts maximum similar fragment
         - resample data
     '''
+    global separator
+    separator = None
     data2 = CsvToDataframe(filename)
 
     # Get sampling interval
@@ -292,8 +306,8 @@ def Synchronize(data, filename):
             data2 = data2.drop(columns=data2.columns[0])
 
         # preview of data
-        view = View(data2.index, -data2)
-        view.AddDataset(data.index, data/1000)
+        view = View(data2.index, data2[data2.columns[0]])
+        view.AddDataset(data.index, data[data.columns[0]]/1000)
         view.Show()
 
         # Join - if data resampled
