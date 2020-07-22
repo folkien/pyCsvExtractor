@@ -6,6 +6,39 @@ import datetime as dt
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 
+
+class SnaptoCursor(object):
+    """
+    Like Cursor but the crosshair snaps to the nearest x, y point.
+    For simplicity, this assumes that *x* is sorted.
+    """
+
+    def __init__(self, ax, x, y):
+        self.ax = ax
+        self.lx = ax.axhline(color='k')  # the horiz line
+        self.ly = ax.axvline(color='k')  # the vert line
+        self.x = x
+        self.y = y
+        # text location in axes coords
+        self.txt = ax.text(0.7, 0.9, '', transform=ax.transAxes)
+
+    def mouse_move(self, event):
+        if not event.inaxes:
+            return
+
+        x, y = event.xdata, event.ydata
+        indx = min(np.searchsorted(self.x, x), len(self.x) - 1)
+        x = self.x[indx]
+        y = self.y[indx]
+        # update the line positions
+        self.lx.set_ydata(y)
+        self.ly.set_xdata(x)
+
+        self.txt.set_text('x=%1.2f, y=%1.2f' % (x, y))
+        print('x=%1.2f, y=%1.2f' % (x, y))
+        self.ax.figure.canvas.draw()
+
+
 # List of all separators
 separators = [',', ';', '.', '#', ':', '\t']
 
@@ -13,7 +46,10 @@ separators = [',', ';', '.', '#', ':', '\t']
 timestamp_formats = [
     '%Y-%m-%d %H:%M:%S.%f',
     '%Y-%m-%d %H:%M:%S,%f',
+    '%Y.%m.%d %H:%M:%S.%f',
+    '%Y.%m.%d %H:%M:%S,%f',
     '%Y-%m-%d %H:%M:%S',
+    '%Y.%m.%d %H:%M:%S',
     '%Y-%m-%d %H:%M',
     '%Y-%m-%d',
     '%H:%M',
@@ -46,6 +82,46 @@ def DetermineDatetimeFormat(string):
             return dtformat
 
     return None
+
+
+coords = []
+
+
+def onclick(event):
+    ''' Store click coordinates '''
+    global ix, iy
+    ix, iy = event.xdata, event.ydata
+    print('x = %d, y = %d' % (ix, iy))
+
+    global coords
+    coords.append((ix, iy))
+
+    if len(coords) == 2:
+        fig.canvas.mpl_disconnect(cid)
+
+    return coords
+
+
+class Cursor(object):
+    def __init__(self, ax):
+        self.ax = ax
+        self.lx = ax.axhline(color='k')  # the horiz line
+        self.ly = ax.axvline(color='k')  # the vert line
+
+        # text location in axes coords
+#         self.txt = ax.text(0.7, 0.9, '', transform=ax.transAxes)
+
+    def mouse_move(self, event):
+        if not event.inaxes:
+            return
+
+        x, y = event.xdata, event.ydata
+        # update the line positions
+        self.lx.set_ydata(y)
+        self.ly.set_xdata(x)
+
+#         self.txt.set_text('x=%1.2f, y=%1.2f' % (x, y))
+        self.ax.figure.canvas.draw()
 
 
 def CsvToDataframe(filename):
@@ -185,17 +261,21 @@ def Synchronize(data, filename):
         print(fps2)
 
         # Resample data2 to data 1
-        if (length1 > length2):
-            data2 = Resample(data2, length1)
-            data = data.drop(columns=data.columns[0])
+        if (args.resample is True):
+            if (length1 > length2):
+                data2 = Resample(data2, length1)
+                data = data.drop(columns=data.columns[0])
+            else:
+                data = Resample(data, length2)
+                data2 = data2.drop(columns=data2.columns[0])
         else:
-            data = Resample(data, length2)
+            data = data.drop(columns=data.columns[0])
             data2 = data2.drop(columns=data2.columns[0])
 
         # preview of data
         fig = plt.figure(figsize=(16.0, 9.0))
         plt.plot(data.index, data/1000)  # @ TODO gain here
-        plt.plot(data2.index, data2)
+        plt.plot(data2.index, -data2)
         plt.xlabel('%s' % data.columns[0])
         plt.title('Preview')
         plt.legend(loc='upper left')
@@ -204,8 +284,13 @@ def Synchronize(data, filename):
         plt.grid(b=True, which='minor', axis='both')
         plt.show()
 
-        # Join
-        data = data.reset_index(drop=True).join(data2.reset_index(drop=True))
+        # Join - if data resampled
+        if (args.resample is True):
+            index = data.index
+            data = data.reset_index(drop=True).join(
+                data2.reset_index(drop=True))
+            data = data.set_index(index)
+            data = data.reset_index()
 
     return data
 
@@ -275,7 +360,9 @@ parser.add_argument('-sc', '--separate-columns', action='store_true',
                     required=False, help='Separate columns to multi files')
 parser.add_argument('-x', '--synchronize-with-file', type=str,
                     required=False, help='Synchronize timestamps with file')
-parser.add_argument('-r', '--removeEqualTo', type=float,
+parser.add_argument('-rs', '--resample', action='store_true',
+                    required=False, help='Resample data')
+parser.add_argument('-re', '--removeEqualTo', type=float,
                     required=False, help='Remove all elements equal to.')
 parser.add_argument('-rms', '--removems', action='store_true',
                     required=False, help='Remove miliseconds from all datetime fields.')
