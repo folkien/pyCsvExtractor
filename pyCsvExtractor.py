@@ -5,6 +5,7 @@ import argparse
 import datetime as dt
 import matplotlib.pyplot as plt
 import locale
+from preview import View
 from scipy.interpolate import interp1d
 
 
@@ -334,16 +335,17 @@ def Preview(data, offset=25, length=10):
         t = data[data.columns[0]][frameoffset:frameoffset+framesize]
         y = data[data.columns[1]][frameoffset:frameoffset+framesize]
 
-        fig = plt.figure(figsize=(16.0, 9.0))
-        plt.plot(t, y)
-        plt.ylabel('%s' % data.columns[1])
-        plt.xlabel('%s' % data.columns[0])
-        plt.title('Preview')
-        plt.legend(loc='upper left')
-        plt.minorticks_on()
-        plt.grid(b=True, which='major', axis='both', color='k')
-        plt.grid(b=True, which='minor', axis='both')
-        plt.show()
+        View(t, y)
+#         fig = plt.figure(figsize=(16.0, 9.0))
+#         plt.plot(t, y)
+#         plt.ylabel('%s' % data.columns[1])
+#         plt.xlabel('%s' % data.columns[0])
+#         plt.title('Preview')
+#         plt.legend(loc='upper left')
+#         plt.minorticks_on()
+#         plt.grid(b=True, which='major', axis='both', color='k')
+#         plt.grid(b=True, which='minor', axis='both')
+#         plt.show()
 
 
 def PrintInfo(data):
