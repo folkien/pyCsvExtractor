@@ -11,7 +11,7 @@ from matplotlib.widgets import Slider
 
 class View(object):
 
-    def __init__(self, t, y, xlabel='', ylabel=''):
+    def __init__(self, t, y, xlabel='', ylabel='', label=''):
         ''' Make data preview with matplotlib'''
         # Save data
         self.t = list(t)
@@ -23,16 +23,15 @@ class View(object):
         # Plot Creation
         self.fig, self.ax = plt.subplots()
         plt.subplots_adjust(left=0.25, bottom=0.25)
-        self.line, = plt.plot(t, y)
-        plt.ylabel(xlabel)
-        plt.xlabel(ylabel)
-        plt.legend(loc='upper left')
-        plt.minorticks_on()
-        plt.grid(b=True, which='major', axis='both', color='k')
-        plt.grid(b=True, which='minor', axis='both')
+        self.line, = plt.plot(t, y, label=label)
+        plt.ylabel(ylabel)
+        plt.xlabel(xlabel)
+        self.ax.minorticks_on()
+        self.ax.grid(b=True, which='major', axis='both', color='k')
+        self.ax.grid(b=True, which='minor', axis='both')
 
         # Slider creation from 0 to 10% offset
-        length = int(0.1*len(t))
+        length = int(0.25*len(t))
         axcolor = 'lightgoldenrodyellow'
         axfreq = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
         self.offset = Slider(axfreq, 'Offset', 0, length, valinit=0, valstep=1)
@@ -40,11 +39,12 @@ class View(object):
 
     def Show(self):
         ''' Show whole plot'''
+        self.ax.legend(loc='upper left')
         plt.show()
 
-    def AddDataset(self, t, y):
+    def AddDataset(self, t, y, label=''):
         ''' Add additional plotted line'''
-        self.ax.plot(t, y)
+        self.ax.plot(t, y, label=label)
 
     def update(self, val):
         ''' Update offset slider '''

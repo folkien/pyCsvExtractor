@@ -306,8 +306,9 @@ def Synchronize(data, filename):
             data2 = data2.drop(columns=data2.columns[0])
 
         # preview of data
-        view = View(data2.index, data2[data2.columns[0]])
-        view.AddDataset(data.index, data[data.columns[0]]/1000)
+        view = View(data2.index, data2[data2.columns[0]], label=filename)
+        view.AddDataset(
+            data.index, data[data.columns[0]]/1000, label=args.input)
         view.Show()
 
         # Join - if data resampled
