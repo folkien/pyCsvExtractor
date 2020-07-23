@@ -342,7 +342,6 @@ def Preview(data, offset=25, length=10):
         y = data[data.columns[1]][frameoffset:frameoffset+framesize]
 
         view = View(t, y, xlabel=data.columns[0], ylabel=data.columns[1])
-        view.AddDataset(t, y)
         view.Show()
 
 

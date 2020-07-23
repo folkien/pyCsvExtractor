@@ -4,6 +4,7 @@ Created on 22 lip 2020
 @author: spasz
 '''
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
@@ -15,6 +16,9 @@ class View(object):
         # Save data
         self.t = list(t)
         self.y = list(y)
+
+        # Select backend
+        matplotlib.use('TkAgg')
 
         # Plot Creation
         self.fig, self.ax = plt.subplots()
