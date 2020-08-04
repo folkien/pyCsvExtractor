@@ -342,7 +342,12 @@ def Preview(data, offset=25, length=10):
         t = data[data.columns[0]][frameoffset:frameoffset+framesize]
         y = data[data.columns[1]][frameoffset:frameoffset+framesize]
 
-        view = View(t, y, xlabel=data.columns[0], ylabel=data.columns[1])
+        # Invert view
+        if (args.invert is True):
+            view = View(t, -y, xlabel=data.columns[0], ylabel=data.columns[1])
+        else:
+            view = View(t, y, xlabel=data.columns[0], ylabel=data.columns[1])
+
         view.Show()
 
 
@@ -370,9 +375,11 @@ parser.add_argument('-d', '--decimalpoint', type=str, nargs='?', const='.',
 parser.add_argument('-s', '--separator', type=str, nargs='?', const=';',
                     required=False, help='Data CSV separator')
 parser.add_argument('-db', '--date-base', type=str,
-                    required=False, help='Start basedate of csv')
+                    required=False, help='Start basedate of csv %%Y-%%m-%%d %%H:%%M:%%S')
 parser.add_argument('-dd', '--dropduplicates', action='store_true',
                     required=False, help='Drops duplicates.')
+parser.add_argument('-inv', '--invert', action='store_true',
+                    required=False, help='Invert signal in preview.')
 parser.add_argument('-f', '--filterErrors', type=int,
                     required=False, help='Filter gross errors window size.')
 parser.add_argument('-sc', '--separate-columns', action='store_true',
