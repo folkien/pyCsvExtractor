@@ -31,7 +31,7 @@ class View(object):
         self.ax.grid(b=True, which='minor', axis='both')
 
         # Slider creation from 0 to 10% offset
-        length = int(0.25*len(t))
+        length = int(0.5*len(t))
         axcolor = 'lightgoldenrodyellow'
         axfreq = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
         self.offset = Slider(axfreq, 'Offset', 0, length, valinit=0, valstep=1)

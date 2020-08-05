@@ -334,11 +334,11 @@ def FilterGrossErrors(window):
     return sample
 
 
-def Preview(data, offset=25, length=10):
+def Preview(data, offset=25, length=50):
     ''' Previews data first two columns'''
     if (len(data.columns) >= 2):
         framesize = int(len(data) * (length/100))
-        frameoffset = int(len(data) * (length/100))
+        frameoffset = int(len(data) * (offset/100))
         t = data[data.columns[0]][frameoffset:frameoffset+framesize]
         y = data[data.columns[1]][frameoffset:frameoffset+framesize]
 
