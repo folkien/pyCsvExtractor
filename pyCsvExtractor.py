@@ -276,13 +276,13 @@ def Synchronize(data, filename):
     # Get begin end timestamps
     begin1, end1 = GetBeginEndTimestamps(data)
     begin2, end2 = GetBeginEndTimestamps(data2)
+    begin = max(begin1, begin2)
+    end = min(end1, end2)
 
     # Select common range
-    if (end1 < begin1) or (end2 < begin2):
-        print('Error! No common range!')
+    if (end < begin):
+        print('Error! Data has no common range!')
     else:
-        begin = max(begin1, begin2)
-        end = min(end1, end2)
 
         # Cut data 1
         data, length1 = DataCut(data, begin, end)
