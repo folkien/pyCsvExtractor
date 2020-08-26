@@ -48,7 +48,7 @@ class SnaptoCursor(object):
 
 
 # List of all separators
-separators = [', ', ';', '#', ':', ',', '.', '\t']
+separators = [', ', ';', '#', ',', '.', ':', '\t']
 
 # List of possible datetime timestamp formats
 timestamp_formats = [
@@ -82,6 +82,7 @@ def StrDateToDatetime(string):
 
 def DetermineSeparator(string):
     ''' Returns founded separator'''
+    print('Separator determined on `%s`.' % string)
     for fsep in separators:
         if (string.find(fsep) != -1):
             print('Separator is `%s`.' % (fsep))
@@ -92,6 +93,7 @@ def DetermineSeparator(string):
 
 def DetermineDatetimeFormat(string):
     ''' Returns founded datetimeformat'''
+    print('DT format determined on `%s`.' % string)
     date = None
     for dtformat in timestamp_formats:
         try:
@@ -99,6 +101,7 @@ def DetermineDatetimeFormat(string):
         except:
             ''' Do nothing '''
         if (date is not None):
+            print('DT format is `%s`.' % (dtformat))
             return dtformat
 
     return None
